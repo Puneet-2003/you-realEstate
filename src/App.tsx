@@ -20,8 +20,6 @@ export default function App() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [inquiryProject, setInquiryProject] = useState<string | undefined>(undefined);
-  const [preloadProgress, setPreloadProgress] = useState(0);
-  const [canvasReady, setCanvasReady] = useState(false);
 
   const handleExploreHomes = () => {
     const el = document.getElementById('projects');
@@ -50,13 +48,10 @@ export default function App() {
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-transparent text-white selection:bg-white selection:text-black relative">
       {/* Luxury Pre-rendering buffer screen for smooth initial load */}
-      <Preloader progress={preloadProgress} isReady={canvasReady} />
+      <Preloader />
 
       {/* Scroll-Based Animation Canvas pinned to background with pre-rendering & texture warming */}
-      <ScrollCanvas 
-        onProgress={(pct) => setPreloadProgress(pct)} 
-        onReady={() => setCanvasReady(true)} 
-      />
+      <ScrollCanvas />
 
       {/* Main interactive page content rendered above on the scroll animation */}
       <div className="relative z-10 w-full overflow-x-hidden" style={{ transform: 'translate3d(0, 0, 0)' }}>

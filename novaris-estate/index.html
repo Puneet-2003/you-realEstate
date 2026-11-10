@@ -14,23 +14,26 @@
     <link rel="preload" as="image" href="/assets/images/hero_novaris_villa_1794323288845.jpg" />
     <link rel="preload" as="image" href="/assets/images/modern_stepped_balconies_1794323289202.jpg" />
 
-    <!-- Critical 3D Animation Frame Preloads (Starts fetching before JS bundle executes) -->
-    <link rel="preload" as="image" href="/extracted_frames_30fps_jpg/frames/frame_000001.jpg" fetchpriority="high" />
-    <link rel="preload" as="image" href="/extracted_frames_30fps_jpg/frames/frame_000005.jpg" />
-    <link rel="preload" as="image" href="/extracted_frames_30fps_jpg/frames/frame_000009.jpg" />
-    <link rel="preload" as="image" href="/extracted_frames_30fps_jpg/frames/frame_000013.jpg" />
-    <link rel="preload" as="image" href="/extracted_frames_30fps_jpg/frames/frame_000017.jpg" />
-    <link rel="preload" as="image" href="/extracted_frames_30fps_jpg/frames/frame_000021.jpg" />
-    <link rel="preload" as="image" href="/extracted_frames_30fps_jpg/frames/frame_000025.jpg" />
+    <!-- Critical 3D Animation WebP Frame Preloads (Starts fetching before JS bundle executes) -->
+    <link rel="preload" as="image" href="/extracted_frames_webp/frames/frame_000001.webp" fetchpriority="high" />
+    <link rel="preload" as="image" href="/extracted_frames_webp/frames/frame_000005.webp" />
+    <link rel="preload" as="image" href="/extracted_frames_webp/frames/frame_000009.webp" />
+    <link rel="preload" as="image" href="/extracted_frames_webp/frames/frame_000013.webp" />
+    <link rel="preload" as="image" href="/extracted_frames_webp/frames/frame_000017.webp" />
+    <link rel="preload" as="image" href="/extracted_frames_webp/frames/frame_000021.webp" />
+    <link rel="preload" as="image" href="/extracted_frames_webp/frames/frame_000025.webp" />
 
-    <!-- Google Fonts with non-blocking display swap -->
+    <!-- Google Fonts with non-blocking display swap to eliminate element render delay -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&family=Space+Grotesk:wght@400;500;600&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&family=Space+Grotesk:wght@400;500;600&display=swap" media="print" onload="this.media='all'" />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&family=Space+Grotesk:wght@400;500;600&display=swap" />
+    </noscript>
   </head>
   <body class="bg-[#030303] text-white antialiased selection:bg-white selection:text-black">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

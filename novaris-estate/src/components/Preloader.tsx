@@ -1,32 +1,42 @@
 import React, { useEffect, useState } from 'react';
 
-interface PreloaderProps {
-  progress: number;
-  isReady: boolean;
-}
-
-export const Preloader: React.FC<PreloaderProps> = ({ progress, isReady }) => {
+export const Preloader: React.FC = () => {
+  const [progress, setProgress] = useState(0);
   const [visible, setVisible] = useState(true);
   const [fading, setFading] = useState(false);
 
   useEffect(() => {
-    // If ready or progress reaches 100, trigger smooth fade-out
-    if (isReady || progress >= 100) {
-      setFading(true);
-      const timer = setTimeout(() => {
-        setVisible(false);
-      }, 600);
-      return () => clearTimeout(timer);
-    }
-  }, [isReady, progress]);
+    // Decoupled custom event listeners: Prevents re-rendering the parent App component
+    const handleProgress = (e: Event) => {
+      const customEvent = e as CustomEvent<number>;
+      const pct = customEvent.detail || 0;
+      setProgress(pct);
+      if (pct >= 100) {
+        setFading(true);
+        setTimeout(() => setVisible(false), 500);
+      }
+    };
 
-  // Failsafe: never block user longer than 2.8s even on slow connections
-  useEffect(() => {
-    const failsafe = setTimeout(() => {
+    const handleReady = () => {
+      setProgress(100);
       setFading(true);
       setTimeout(() => setVisible(false), 500);
-    }, 2800);
-    return () => clearTimeout(failsafe);
+    };
+
+    window.addEventListener('novaris:progress', handleProgress);
+    window.addEventListener('novaris:ready', handleReady);
+
+    // Failsafe timer so users are never blocked on slow connections
+    const failsafe = setTimeout(() => {
+      setFading(true);
+      setTimeout(() => setVisible(false), 400);
+    }, 2200);
+
+    return () => {
+      window.removeEventListener('novaris:progress', handleProgress);
+      window.removeEventListener('novaris:ready', handleReady);
+      clearTimeout(failsafe);
+    };
   }, []);
 
   if (!visible) return null;
@@ -60,8 +70,8 @@ export const Preloader: React.FC<PreloaderProps> = ({ progress, isReady }) => {
         <div className="w-full space-y-2.5 pt-4">
           <div className="w-full h-[2px] bg-white/10 rounded-full overflow-hidden relative">
             <div
-              className="h-full bg-gradient-to-r from-amber-200 via-white to-amber-100 transition-all duration-300 ease-out"
-              style={{ width: `${Math.min(100, Math.max(8, progress))}%` }}
+              className="h-full bg-gradient-to-r from-amber-200 via-white to-amber-100 transition-all duration-200 ease-out"
+              style={{ width: `${Math.min(100, Math.max(10, progress))}%` }}
             />
           </div>
 

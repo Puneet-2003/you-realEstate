@@ -1,189 +1,39 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scroll Animation</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+<!doctype html>
+<html lang="en" class="dark scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NOVARIS ESTATE — Super-Architectural Real Estate</title>
+    <meta name="description" content="Super-architectural real estate for the modern world. Redefining luxury modern living with cutting-edge engineering and timeless aesthetics." />
+    <meta property="og:title" content="NOVARIS ESTATE — Super-Architectural Real Estate" />
+    <meta property="og:description" content="Super-architectural real estate for the modern world. Redefining luxury modern living with cutting-edge engineering and timeless aesthetics." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    
+    <!-- Preload Hero Image for instant rendering -->
+    <link rel="preload" as="image" href="/assets/images/hero_novaris_villa_1794323288845.jpg" />
+    <link rel="preload" as="image" href="/assets/images/modern_stepped_balconies_1794323289202.jpg" />
 
-    html, body {
-      width: 100%;
-      height: 100%;
-      background-color: #000000;
-      overflow-x: hidden;
-    }
+    <!-- Critical 3D Animation WebP Frame Preloads (Starts fetching before JS bundle executes) -->
+    <link rel="preload" as="image" href="/extracted_frames_webp/frames/frame_000001.webp" fetchpriority="high" />
+    <link rel="preload" as="image" href="/extracted_frames_webp/frames/frame_000005.webp" />
+    <link rel="preload" as="image" href="/extracted_frames_webp/frames/frame_000009.webp" />
+    <link rel="preload" as="image" href="/extracted_frames_webp/frames/frame_000013.webp" />
+    <link rel="preload" as="image" href="/extracted_frames_webp/frames/frame_000017.webp" />
+    <link rel="preload" as="image" href="/extracted_frames_webp/frames/frame_000021.webp" />
+    <link rel="preload" as="image" href="/extracted_frames_webp/frames/frame_000025.webp" />
 
-    /* Scroll container */
-    body {
-      height: 700vh;
-    }
-
-    /* Fixed full-screen canvas viewport */
-    #canvas-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      pointer-events: none;
-    }
-
-    canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-  </style>
-</head>
-<body>
-  <div id="canvas-container">
-    <canvas id="animation-canvas"></canvas>
-  </div>
-
-  <script>
-    (function() {
-      const TOTAL_FRAMES = 448;
-      const canvas = document.getElementById('animation-canvas');
-      const ctx = canvas.getContext('2d', { alpha: false });
-
-      const frames = new Array(TOTAL_FRAMES + 1);
-      const loadedMap = new Uint8Array(TOTAL_FRAMES + 1);
-      let lastRenderedFrame = -1;
-
-      // Pad frame number to 6 digits (e.g. frame_000001.jpg)
-      function getFrameUrl(index) {
-        const padded = String(index).padStart(6, '0');
-        return `extracted_frames_30fps_jpg/frames/frame_${padded}.jpg`;
-      }
-
-      // Handle Retina / High DPI sizing with mobile GPU consideration
-      function resizeCanvas() {
-        const isMobile = window.innerWidth < 768;
-        const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.0 : 1.5);
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-
-        canvas.width = Math.round(w * dpr);
-        canvas.height = Math.round(h * dpr);
-
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = isMobile ? 'medium' : 'high';
-
-        // Force re-render current frame on resize
-        if (lastRenderedFrame > 0) {
-          drawFrame(lastRenderedFrame);
-        }
-      }
-
-      window.addEventListener('resize', resizeCanvas, { passive: true });
-      window.addEventListener('orientationchange', resizeCanvas, { passive: true });
-      resizeCanvas();
-
-      // Find the closest loaded frame to avoid any blank frame or flicker
-      function getBestAvailableImage(targetIndex) {
-        if (loadedMap[targetIndex] && frames[targetIndex]) {
-          return frames[targetIndex];
-        }
-
-        // Search closest lower and higher frames
-        let dist = 1;
-        while (dist < TOTAL_FRAMES) {
-          const lower = targetIndex - dist;
-          if (lower >= 1 && loadedMap[lower] && frames[lower]) {
-            return frames[lower];
-          }
-          const higher = targetIndex + dist;
-          if (higher <= TOTAL_FRAMES && loadedMap[higher] && frames[higher]) {
-            return frames[higher];
-          }
-          dist++;
-        }
-        return null;
-      }
-
-      // Render image with cover scaling (centers and fills viewport without distortion)
-      function drawFrame(index) {
-        const img = getBestAvailableImage(index);
-        if (!img) return;
-
-        const cw = canvas.width;
-        const ch = canvas.height;
-        const iw = img.naturalWidth || 1920;
-        const ih = img.naturalHeight || 1080;
-
-        const scale = Math.max(cw / iw, ch / ih);
-        const w = iw * scale;
-        const h = ih * scale;
-        const x = (cw - w) * 0.5;
-        const y = (ch - h) * 0.5;
-
-        ctx.drawImage(img, x, y, w, h);
-        lastRenderedFrame = index;
-      }
-
-      // Preload images with controlled concurrency pool
-      const CONCURRENCY = 16;
-      let nextIndexToLoad = 1;
-
-      function loadNext() {
-        if (nextIndexToLoad > TOTAL_FRAMES) return;
-        const index = nextIndexToLoad++;
-        const img = new Image();
-        img.src = getFrameUrl(index);
-        img.onload = () => {
-          frames[index] = img;
-          loadedMap[index] = 1;
-          // Render first frame immediately once it arrives
-          if (index === 1 && lastRenderedFrame === -1) {
-            drawFrame(1);
-          }
-          loadNext();
-        };
-        img.onerror = () => {
-          loadNext();
-        };
-      }
-
-      // Start initial batch of image loading
-      for (let i = 0; i < CONCURRENCY; i++) {
-        loadNext();
-      }
-
-      // Scroll calculation with lerp (linear interpolation) for buttery smoothness
-      let targetFrame = 1;
-      let currentFrame = 1;
-
-      function updateTargetFromScroll() {
-        const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
-        const maxScroll = (document.documentElement.scrollHeight - window.innerHeight) || 1;
-        const progress = Math.max(0, Math.min(1, scrollTop / maxScroll));
-        targetFrame = 1 + progress * (TOTAL_FRAMES - 1);
-      }
-
-      window.addEventListener('scroll', updateTargetFromScroll, { passive: true });
-      updateTargetFromScroll();
-
-      // Smooth render loop
-      function animationLoop() {
-        // Buttery lerp easing
-        currentFrame += (targetFrame - currentFrame) * 0.14;
-
-        const frameIndex = Math.min(TOTAL_FRAMES, Math.max(1, Math.round(currentFrame)));
-        if (frameIndex !== lastRenderedFrame || lastRenderedFrame === -1) {
-          drawFrame(frameIndex);
-        }
-
-        requestAnimationFrame(animationLoop);
-      }
-
-      requestAnimationFrame(animationLoop);
-    })();
-  </script>
-</body>
+    <!-- Google Fonts with non-blocking display swap to eliminate element render delay -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&family=Space+Grotesk:wght@400;500;600&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&family=Space+Grotesk:wght@400;500;600&display=swap" media="print" onload="this.media='all'" />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&family=Space+Grotesk:wght@400;500;600&display=swap" />
+    </noscript>
+  </head>
+  <body class="bg-[#030303] text-white antialiased selection:bg-white selection:text-black">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

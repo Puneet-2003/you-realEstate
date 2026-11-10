@@ -1,16 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 
-const TOTAL_FRAMES = 448;
+const TOTAL_FRAMES = 358;
 const KEYFRAME_STRIDE = 4;
 // Number of initial keyframes required to warm the engine and guarantee fluid scroll
 const CRITICAL_WARMUP_COUNT = 16;
 
-interface ScrollCanvasProps {
-  onProgress?: (percent: number) => void;
-  onReady?: () => void;
-}
-
-export const ScrollCanvas: React.FC<ScrollCanvasProps> = ({ onProgress, onReady }) => {
+export const ScrollCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -39,13 +34,13 @@ export const ScrollCanvas: React.FC<ScrollCanvasProps> = ({ onProgress, onReady 
 
     const getFrameUrl = (index: number) => {
       const padded = String(index).padStart(6, '0');
-      return `/extracted_frames_30fps_jpg/frames/frame_${padded}.jpg`;
+      return `/extracted_frames_webp/frames/frame_${padded}.webp`;
     };
 
     // Cache dimensions to avoid layout thrashing
     let cachedMaxScroll = 1;
-    let cachedWidth = 1920;
-    let cachedHeight = 1080;
+    let cachedWidth = 1600;
+    let cachedHeight = 900;
 
     const updateDimensions = () => {
       const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight || 1;
@@ -56,9 +51,9 @@ export const ScrollCanvas: React.FC<ScrollCanvasProps> = ({ onProgress, onReady 
       const h = window.innerHeight;
       const isMobile = w < 768;
 
-      // GPU fill-rate protection: 1440x810 on desktop, 960x540 on mobile
-      const maxWidth = isMobile ? 960 : 1440;
-      const maxHeight = isMobile ? 540 : 810;
+      // GPU fill-rate protection: 1600x900 on desktop, 960x540 on mobile
+      const maxWidth = isMobile ? 960 : 1600;
+      const maxHeight = isMobile ? 540 : 900;
 
       const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.0 : 1.25);
       const targetW = Math.min(maxWidth, Math.round(w * dpr));
@@ -131,8 +126,8 @@ export const ScrollCanvas: React.FC<ScrollCanvasProps> = ({ onProgress, onReady 
 
       const cw = cachedWidth;
       const ch = cachedHeight;
-      const iw = img.naturalWidth || 1920;
-      const ih = img.naturalHeight || 1080;
+      const iw = img.naturalWidth || 1600;
+      const ih = img.naturalHeight || 900;
 
       const scale = Math.max(cw / iw, ch / ih);
       const w = iw * scale;
@@ -176,10 +171,10 @@ export const ScrollCanvas: React.FC<ScrollCanvasProps> = ({ onProgress, onReady 
       }
     };
 
-    // Loader queue
+    // Loader queue with controlled concurrency
     const loadQueue: number[] = [];
     let activeLoads = 0;
-    const MAX_CONCURRENT = 5;
+    const MAX_CONCURRENT = 6;
 
     const loadSingleFrame = (index: number, onDone?: () => void) => {
       if (loadedMap[index] || frames[index]) {
@@ -198,13 +193,13 @@ export const ScrollCanvas: React.FC<ScrollCanvasProps> = ({ onProgress, onReady 
         if (!warmedUp) {
           loadedWarmupCount++;
           const progress = Math.min(100, (loadedWarmupCount / CRITICAL_WARMUP_COUNT) * 100);
-          onProgress?.(progress);
+          window.dispatchEvent(new CustomEvent('novaris:progress', { detail: progress }));
 
           if (loadedWarmupCount >= CRITICAL_WARMUP_COUNT) {
             warmedUp = true;
             // Warm GPU texture pipeline by drawing frame 1
             drawFrame(1);
-            onReady?.();
+            window.dispatchEvent(new CustomEvent('novaris:ready'));
           }
         }
 
@@ -263,7 +258,7 @@ export const ScrollCanvas: React.FC<ScrollCanvasProps> = ({ onProgress, onReady 
       enqueueFrame(i, true);
     }
 
-    // Priority 3: Preload remaining keyframe track (stride of 4 across entire 448 frames)
+    // Priority 3: Preload remaining keyframe track across entire animation
     const preloadRemainingKeyframes = () => {
       for (let i = CRITICAL_WARMUP_COUNT * KEYFRAME_STRIDE + 1; i <= TOTAL_FRAMES; i += KEYFRAME_STRIDE) {
         enqueueFrame(i, false);
@@ -271,7 +266,7 @@ export const ScrollCanvas: React.FC<ScrollCanvasProps> = ({ onProgress, onReady 
       enqueueFrame(TOTAL_FRAMES, false);
     };
 
-    setTimeout(preloadRemainingKeyframes, 200);
+    const keyframeTimeout = setTimeout(preloadRemainingKeyframes, 200);
 
     // Dynamic Window Loader for detail frames near scroll position
     const loadSurroundingWindow = (centerFrame: number) => {
@@ -315,29 +310,31 @@ export const ScrollCanvas: React.FC<ScrollCanvasProps> = ({ onProgress, onReady 
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
 
-    // Idle filler for remaining in-between frames
+    // Idle background filler for remaining in-between frames
     let idleIndex = 1;
-    const idleFillerInterval = setInterval(() => {
+    let idleInterval: ReturnType<typeof setInterval> | null = null;
+    idleInterval = setInterval(() => {
       if (isUserScrolling || loadQueue.length > 6) return;
       if (idleIndex > TOTAL_FRAMES) {
-        clearInterval(idleFillerInterval);
+        if (idleInterval) clearInterval(idleInterval);
         return;
       }
       if (!loadedMap[idleIndex] && !requestedMap[idleIndex]) {
         enqueueFrame(idleIndex, false);
       }
       idleIndex++;
-    }, 60);
+    }, 75);
 
     return () => {
       cancelAnimationFrame(animFrameId);
       clearTimeout(scrollIdleTimer);
-      clearInterval(idleFillerInterval);
+      clearTimeout(keyframeTimeout);
+      if (idleInterval) clearInterval(idleInterval);
       window.removeEventListener('resize', updateDimensions);
       window.removeEventListener('orientationchange', updateDimensions);
       window.removeEventListener('scroll', onScroll);
     };
-  }, [onProgress, onReady]);
+  }, []);
 
   return (
     <div
