@@ -151,7 +151,7 @@ export const ScrollCanvas: React.FC = () => {
         onComplete?.();
       };
 
-      if ('decode' in img) {
+      if (typeof img.decode === 'function') {
         img.decode()
           .then(markReady)
           .catch(() => {
@@ -159,8 +159,8 @@ export const ScrollCanvas: React.FC = () => {
             img.onerror = () => onComplete?.();
           });
       } else {
-        img.onload = markReady;
-        img.onerror = () => onComplete?.();
+        (img as HTMLImageElement).onload = markReady;
+        (img as HTMLImageElement).onerror = () => onComplete?.();
       }
     };
 
