@@ -1,10 +1,16 @@
 import React, { useEffect, useRef } from 'react';
 
 const TOTAL_FRAMES = 448;
-// Stride for rapid sparse preloading (loads 1 in every 4 frames first: 112 frames instead of 448)
 const KEYFRAME_STRIDE = 4;
+// Number of initial keyframes required to warm the engine and guarantee fluid scroll
+const CRITICAL_WARMUP_COUNT = 16;
 
-export const ScrollCanvas: React.FC = () => {
+interface ScrollCanvasProps {
+  onProgress?: (percent: number) => void;
+  onReady?: () => void;
+}
+
+export const ScrollCanvas: React.FC<ScrollCanvasProps> = ({ onProgress, onReady }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -18,7 +24,7 @@ export const ScrollCanvas: React.FC = () => {
     });
     if (!ctx) return;
 
-    // Pre-allocated sparse image cache
+    // Pre-allocated frame arrays
     const frames: (HTMLImageElement | null)[] = new Array(TOTAL_FRAMES + 1).fill(null);
     const loadedMap = new Uint8Array(TOTAL_FRAMES + 1);
     const requestedMap = new Uint8Array(TOTAL_FRAMES + 1);
@@ -28,13 +34,15 @@ export const ScrollCanvas: React.FC = () => {
     let isAnimating = false;
     let isUserScrolling = false;
     let scrollIdleTimer = 0;
+    let warmedUp = false;
+    let loadedWarmupCount = 0;
 
     const getFrameUrl = (index: number) => {
       const padded = String(index).padStart(6, '0');
       return `/extracted_frames_30fps_jpg/frames/frame_${padded}.jpg`;
     };
 
-    // Dimension caching to eliminate layout thrashing during scroll
+    // Cache dimensions to avoid layout thrashing
     let cachedMaxScroll = 1;
     let cachedWidth = 1920;
     let cachedHeight = 1080;
@@ -48,9 +56,7 @@ export const ScrollCanvas: React.FC = () => {
       const h = window.innerHeight;
       const isMobile = w < 768;
 
-      // Cap resolution to 1440x810 on desktop and 960x540 on mobile
-      // GPU automatically upscales to 100vw x 100vh with hardware bilinear filtering
-      // This saves 45-60% of GPU fill-rate and eliminates scroll lag completely!
+      // GPU fill-rate protection: 1440x810 on desktop, 960x540 on mobile
       const maxWidth = isMobile ? 960 : 1440;
       const maxHeight = isMobile ? 540 : 810;
 
@@ -84,7 +90,7 @@ export const ScrollCanvas: React.FC = () => {
         return frames[targetIndex];
       }
 
-      // 2. Nearest neighbor immediate check (±1, ±2, ±3)
+      // 2. Immediate neighbor check (±1, ±2, ±3)
       for (let offset = 1; offset <= 3; offset++) {
         const lower = targetIndex - offset;
         if (lower >= 1 && loadedMap[lower] && frames[lower]) {
@@ -102,7 +108,7 @@ export const ScrollCanvas: React.FC = () => {
         return frames[nearestKey];
       }
 
-      // 4. Stride expansion (checks only keyframes: at most 10 steps instead of 448!)
+      // 4. Stride expansion
       for (let k = 1; k <= 15; k++) {
         const lowerK = nearestKey - k * KEYFRAME_STRIDE;
         if (lowerK >= 1 && loadedMap[lowerK] && frames[lowerK]) {
@@ -138,7 +144,7 @@ export const ScrollCanvas: React.FC = () => {
       lastRenderedFrame = index;
     };
 
-    // Frame targets for linear interpolation (lerp)
+    // Frame targets for lerping
     let targetFrame = 1;
     let currentFrame = 1;
 
@@ -148,7 +154,6 @@ export const ScrollCanvas: React.FC = () => {
       if (Math.abs(diff) < 0.04) {
         currentFrame = targetFrame;
       } else {
-        // Snappy lerp (0.24) eliminates trailing latency
         currentFrame += diff * 0.24;
       }
 
@@ -171,10 +176,10 @@ export const ScrollCanvas: React.FC = () => {
       }
     };
 
-    // Controlled loader queue
+    // Loader queue
     const loadQueue: number[] = [];
     let activeLoads = 0;
-    const MAX_CONCURRENT = 4; // Keeps network and main-thread responsive
+    const MAX_CONCURRENT = 5;
 
     const loadSingleFrame = (index: number, onDone?: () => void) => {
       if (loadedMap[index] || frames[index]) {
@@ -188,6 +193,21 @@ export const ScrollCanvas: React.FC = () => {
       const markReady = () => {
         frames[index] = img;
         loadedMap[index] = 1;
+
+        // Warm up metrics
+        if (!warmedUp) {
+          loadedWarmupCount++;
+          const progress = Math.min(100, (loadedWarmupCount / CRITICAL_WARMUP_COUNT) * 100);
+          onProgress?.(progress);
+
+          if (loadedWarmupCount >= CRITICAL_WARMUP_COUNT) {
+            warmedUp = true;
+            // Warm GPU texture pipeline by drawing frame 1
+            drawFrame(1);
+            onReady?.();
+          }
+        }
+
         if (index === 1 && lastRenderedFrame === -1) {
           drawFrame(1);
         }
@@ -238,19 +258,22 @@ export const ScrollCanvas: React.FC = () => {
       drawFrame(1);
     });
 
-    // Priority 2: Preload Keyframe Track (every 4th frame: 1, 5, 9, 13...)
-    // This gives an instant 60fps smooth skeleton across 100% of the page
-    const preloadKeyframes = () => {
-      for (let i = 1; i <= TOTAL_FRAMES; i += KEYFRAME_STRIDE) {
+    // Priority 2: Preload initial critical track for instant warm-up
+    for (let i = 1; i <= CRITICAL_WARMUP_COUNT * KEYFRAME_STRIDE; i += KEYFRAME_STRIDE) {
+      enqueueFrame(i, true);
+    }
+
+    // Priority 3: Preload remaining keyframe track (stride of 4 across entire 448 frames)
+    const preloadRemainingKeyframes = () => {
+      for (let i = CRITICAL_WARMUP_COUNT * KEYFRAME_STRIDE + 1; i <= TOTAL_FRAMES; i += KEYFRAME_STRIDE) {
         enqueueFrame(i, false);
       }
       enqueueFrame(TOTAL_FRAMES, false);
     };
 
-    // Start loading keyframes after first paint
-    setTimeout(preloadKeyframes, 50);
+    setTimeout(preloadRemainingKeyframes, 200);
 
-    // Dynamic Window Loader: only loads high-density intermediate frames near the user
+    // Dynamic Window Loader for detail frames near scroll position
     const loadSurroundingWindow = (centerFrame: number) => {
       const radius = 6;
       for (let offset = 0; offset <= radius; offset++) {
@@ -265,25 +288,21 @@ export const ScrollCanvas: React.FC = () => {
       }
     };
 
-    // Passive, zero-overhead scroll listener
+    // Passive scroll listener
     const onScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
       const progress = Math.max(0, Math.min(1, scrollTop / (cachedMaxScroll || 1)));
       targetFrame = 1 + progress * (TOTAL_FRAMES - 1);
 
-      // Request animation frame
       requestTick();
 
-      // Flag scrolling state to pause heavy background loads during active user interaction
       isUserScrolling = true;
       clearTimeout(scrollIdleTimer);
       scrollIdleTimer = window.setTimeout(() => {
         isUserScrolling = false;
-        // On scroll idle, load surrounding detail frames
         loadSurroundingWindow(Math.round(targetFrame));
       }, 80);
 
-      // On active scroll, prioritize next immediate 3 frames
       const current = Math.round(targetFrame);
       for (let i = -2; i <= 3; i++) {
         const idx = current + i;
@@ -296,7 +315,7 @@ export const ScrollCanvas: React.FC = () => {
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
 
-    // Idle progressive filler: gently fills in missing frames only when user is completely idle
+    // Idle filler for remaining in-between frames
     let idleIndex = 1;
     const idleFillerInterval = setInterval(() => {
       if (isUserScrolling || loadQueue.length > 6) return;
@@ -318,7 +337,7 @@ export const ScrollCanvas: React.FC = () => {
       window.removeEventListener('orientationchange', updateDimensions);
       window.removeEventListener('scroll', onScroll);
     };
-  }, []);
+  }, [onProgress, onReady]);
 
   return (
     <div

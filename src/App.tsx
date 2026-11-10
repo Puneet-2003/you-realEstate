@@ -12,6 +12,7 @@ import { EditionSwitcher, EditionType } from './components/EditionSwitcher';
 import { ResidenceAuroraView } from './components/aurora/ResidenceAuroraView';
 import { RivieraAgencyView } from './components/riviera/RivieraAgencyView';
 import { ScrollCanvas } from './components/ScrollCanvas';
+import { Preloader } from './components/Preloader';
 import { Project, PROJECTS } from './data/projects';
 
 export default function App() {
@@ -19,6 +20,8 @@ export default function App() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [inquiryProject, setInquiryProject] = useState<string | undefined>(undefined);
+  const [preloadProgress, setPreloadProgress] = useState(0);
+  const [canvasReady, setCanvasReady] = useState(false);
 
   const handleExploreHomes = () => {
     const el = document.getElementById('projects');
@@ -46,8 +49,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-transparent text-white selection:bg-white selection:text-black relative">
-      {/* Scroll-Based Animation Canvas pinned to background */}
-      <ScrollCanvas />
+      {/* Luxury Pre-rendering buffer screen for smooth initial load */}
+      <Preloader progress={preloadProgress} isReady={canvasReady} />
+
+      {/* Scroll-Based Animation Canvas pinned to background with pre-rendering & texture warming */}
+      <ScrollCanvas 
+        onProgress={(pct) => setPreloadProgress(pct)} 
+        onReady={() => setCanvasReady(true)} 
+      />
 
       {/* Main interactive page content rendered above on the scroll animation */}
       <div className="relative z-10 w-full overflow-x-hidden" style={{ transform: 'translate3d(0, 0, 0)' }}>
