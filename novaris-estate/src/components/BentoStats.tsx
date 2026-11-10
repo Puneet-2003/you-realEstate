@@ -78,7 +78,7 @@ export const BentoStats: React.FC = () => {
                 Nova Parametric Pavilion
               </h4>
             </div>
-            <span className="text-[10px] sm:text-xs font-mono text-zinc-300 bg-black/60 backdrop-blur-md px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-white/10 shrink-0 ml-2">
+            <span className="text-[10px] sm:text-xs font-mono text-zinc-300 bg-black/80 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-white/10 shrink-0 ml-2">
               Tokyo // 2024
             </span>
           </div>

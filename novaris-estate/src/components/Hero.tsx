@@ -115,7 +115,7 @@ export const Hero: React.FC<HeroProps> = ({ onViewProjects, onOpenFeatured }) =>
           {/* Circular Button */}
           <button
             onClick={onViewProjects}
-            className="group flex flex-col items-center justify-center w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-black/70 hover:bg-white text-white hover:text-black border border-white/25 hover:border-white transition-all duration-500 cursor-pointer shadow-2xl backdrop-blur-md shrink-0 active:scale-95"
+            className="group flex flex-col items-center justify-center w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-[#0d0d10]/90 hover:bg-white text-white hover:text-black border border-white/25 hover:border-white transition-all duration-500 cursor-pointer shadow-2xl shrink-0 active:scale-95"
             aria-label="Scroll to projects"
           >
             <span className="text-[9px] sm:text-xs font-medium tracking-wider uppercase mb-0.5 sm:mb-1">

@@ -45,12 +45,12 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-[#060608]/20 text-white selection:bg-white selection:text-black relative">
+    <div className="min-h-screen w-full overflow-x-hidden bg-transparent text-white selection:bg-white selection:text-black relative">
       {/* Scroll-Based Animation Canvas pinned to background */}
       <ScrollCanvas />
 
       {/* Main interactive page content rendered above on the scroll animation */}
-      <div className="relative z-10 w-full overflow-x-hidden">
+      <div className="relative z-10 w-full overflow-x-hidden" style={{ transform: 'translate3d(0, 0, 0)' }}>
         {/* Dynamic View by Edition */}
         {currentEdition === 'novaris' && (
           <>

@@ -144,10 +144,10 @@ export const FeaturedProjects: React.FC<FeaturedProjectsProps> = ({ onSelectProj
 
                 {/* Top Overlay Badges */}
                 <div className="absolute top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-4 flex items-center justify-between">
-                  <span className="text-[10px] sm:text-[11px] font-mono tracking-widest text-zinc-300 bg-black/60 backdrop-blur-md px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-white/10 truncate max-w-[70%]">
+                  <span className="text-[10px] sm:text-[11px] font-mono tracking-widest text-zinc-300 bg-black/80 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-white/10 truncate max-w-[70%]">
                     {project.category}
                   </span>
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/15 flex items-center justify-center text-zinc-300 group-hover:text-white group-hover:bg-white group-hover:text-black transition-all shrink-0">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/80 border border-white/15 flex items-center justify-center text-zinc-300 group-hover:text-white group-hover:bg-white group-hover:text-black transition-all shrink-0">
                     <Maximize2 className="w-3.5 h-3.5" />
                   </div>
                 </div>
