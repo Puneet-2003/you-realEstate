@@ -1,0 +1,6 @@
+{
+  "name": "NOVARIS ESTATE",
+  "description": "Super-architectural real estate for the modern world. Redefining luxury modern living with cutting-edge engineering and timeless aesthetics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

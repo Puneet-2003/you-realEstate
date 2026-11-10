@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+novaris-estate/node_modules/
+
+# Production builds
+dist/
+novaris-estate/dist/
+build/
+
+# Large Archives (>100MB limit on GitHub)
+*.zip
+*.tar
+*.gz
+
+# Environment & local settings
+.env*
+!.env.example
+.aistudio/
+novaris-estate/.aistudio/
+
+# OS & Logs
+.DS_Store
+Thumbs.db
+*.log
